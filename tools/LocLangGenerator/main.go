@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/binary"
 	"fmt"
+	"os"
 	"slices"
 
 	"fyne.io/fyne/v2"
@@ -12,6 +13,8 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+
+	cross_dialog "github.com/sqweek/dialog"
 )
 
 var langList = []string{
@@ -81,185 +84,197 @@ func main() {
 	})
 
 	loadButton := widget.NewButton("Load", func() {
-		dialog.ShowFileOpen(func(reader fyne.URIReadCloser, err error) {
+		filename, err := cross_dialog.File().Title("Load").Filter("Language Config Files", "lang").Filter("All files", "*").Load()
+		if err != nil {
+			if err != cross_dialog.ErrCancelled {
+				dialog.ShowError(err, windows)
+			}
+			return
+		}
+		file, err := os.OpenFile(filename, os.O_RDONLY, 0644)
+		if err != nil {
+			dialog.ShowError(err, windows)
+			return
+		}
+		if file == nil {
+			return
+		}
+		defer file.Close()
+
+		var header [4]byte
+		var subtitleIdx, audioIdx [1]byte
+		subtitleBitfield := make([]byte, 4)
+		audioBitfield := make([]byte, 4)
+
+		{
+			fmt.Printf("Reading file:\n")
+
+			n, err := file.Read(header[:])
 			if err != nil {
 				dialog.ShowError(err, windows)
 				return
-			}
-			if reader == nil {
+			} else if n != 4 || string(header[:]) != "LANG" {
+				dialog.ShowError(fmt.Errorf("%s", "Invalid file format"), windows)
 				return
 			}
-			defer reader.Close()
+			fmt.Printf("\tHeader:\t\t%s\n", header[:])
 
-			var header [4]byte
-			var subtitleIdx, audioIdx byte
-			subtitleBitfield := make([]byte, 4)
-			audioBitfield := make([]byte, 4)
-
-			{
-				fmt.Printf("Reading file:\n")
-
-				n, err := reader.Read(header[:])
-				if err != nil {
-					dialog.ShowError(err, windows)
-					return
-				} else if n != 4 || string(header[:]) != "LANG" {
-					dialog.ShowError(fmt.Errorf("%s", "Invalid file format"), windows)
-					return
-				}
-				fmt.Printf("\tHeader:\t\t%s\n", header[:])
-
-				n, err = reader.Read([]byte{subtitleIdx})
-				if err != nil {
-					dialog.ShowError(err, windows)
-					return
-				} else if n != 1 || subtitleIdx > 0x1f {
-					dialog.ShowError(fmt.Errorf("%s", "Invalid file format"), windows)
-					return
-				}
-				fmt.Printf("\tSubtitleIdx:\t%d\n", subtitleIdx)
-
-				n, err = reader.Read(subtitleBitfield)
-				if err != nil {
-					dialog.ShowError(err, windows)
-					return
-				} else if n != 4 {
-					dialog.ShowError(fmt.Errorf("%s", "Invalid file format"), windows)
-					return
-				}
-				fmt.Printf("\tSubtitleBytes:\t%v\n", subtitleBitfield)
-
-				n, err = reader.Read(audioBitfield)
-				if err != nil {
-					dialog.ShowError(err, windows)
-					return
-				} else if n != 4 {
-					dialog.ShowError(fmt.Errorf("%s", "Invalid file format"), windows)
-					return
-				}
-				fmt.Printf("\tAudioBytes:\t%v\n", audioBitfield)
-
-				n, err = reader.Read([]byte{audioIdx})
-				if err != nil {
-					dialog.ShowError(err, windows)
-					return
-				} else if n != 1 || audioIdx > 0x1f {
-					dialog.ShowError(fmt.Errorf("%s", "Invalid file format"), windows)
-					return
-				}
-				fmt.Printf("\tAudioIdx:\t%d\n", audioIdx)
+			n, err = file.Read(subtitleIdx[:])
+			if err != nil {
+				dialog.ShowError(err, windows)
+				return
+			} else if n != 1 || subtitleIdx[0] > 0x1f {
+				dialog.ShowError(fmt.Errorf("%s", "Invalid file format"), windows)
+				return
 			}
+			fmt.Printf("\tSubtitleIdx:\t%d\n", subtitleIdx[0])
 
-			subtitleBits := binary.BigEndian.Uint32(subtitleBitfield)
-			audioBits := binary.BigEndian.Uint32(audioBitfield)
-
-			subtitleCheckList.Selected = []string{}
-			audioCheckList.Selected = []string{}
-			for i := 0; i < len(langList); i++ {
-				if subtitleBits&(1<<uint(i)) != 0 {
-					subtitleCheckList.Selected = append(subtitleCheckList.Selected, langList[i])
-				}
-				if audioBits&(1<<uint(i)) != 0 {
-					audioCheckList.Selected = append(audioCheckList.Selected, langList[i])
-				}
+			n, err = file.Read(subtitleBitfield)
+			if err != nil {
+				dialog.ShowError(err, windows)
+				return
+			} else if n != 4 {
+				dialog.ShowError(fmt.Errorf("%s", "Invalid file format"), windows)
+				return
 			}
+			fmt.Printf("\tSubtitleBytes:\t%v\n", subtitleBitfield)
 
-			subtitleDropList.Options = subtitleCheckList.Selected
-			subtitleDropList.Selected = langList[subtitleIdx]
-			subtitleDropList.Refresh()
+			n, err = file.Read(audioBitfield)
+			if err != nil {
+				dialog.ShowError(err, windows)
+				return
+			} else if n != 4 {
+				dialog.ShowError(fmt.Errorf("%s", "Invalid file format"), windows)
+				return
+			}
+			fmt.Printf("\tAudioBytes:\t%v\n", audioBitfield)
 
-			audioDropList.Options = audioCheckList.Selected
-			audioDropList.Selected = langList[audioIdx]
-			audioDropList.Refresh()
+			n, err = file.Read(audioIdx[:])
+			if err != nil {
+				dialog.ShowError(err, windows)
+				return
+			} else if n != 1 || audioIdx[0] > 0x1f {
+				dialog.ShowError(fmt.Errorf("%s", "Invalid file format"), windows)
+				return
+			}
+			fmt.Printf("\tAudioIdx:\t%d\n", audioIdx[0])
+		}
 
-			subtitleCheckList.Refresh()
-			audioCheckList.Refresh()
-		}, windows)
+		subtitleBits := binary.BigEndian.Uint32(subtitleBitfield)
+		audioBits := binary.BigEndian.Uint32(audioBitfield)
+
+		subtitleCheckList.Selected = []string{}
+		audioCheckList.Selected = []string{}
+		for i := 0; i < len(langList); i++ {
+			if subtitleBits&(1<<uint(i)) != 0 {
+				subtitleCheckList.Selected = append(subtitleCheckList.Selected, langList[i])
+			}
+			if audioBits&(1<<uint(i)) != 0 {
+				audioCheckList.Selected = append(audioCheckList.Selected, langList[i])
+			}
+		}
+
+		subtitleDropList.Options = subtitleCheckList.Selected
+		subtitleDropList.Selected = langList[subtitleIdx[0]]
+		subtitleDropList.Refresh()
+
+		audioDropList.Options = audioCheckList.Selected
+		audioDropList.Selected = langList[audioIdx[0]]
+		audioDropList.Refresh()
+
+		subtitleCheckList.Refresh()
+		audioCheckList.Refresh()
 	})
 
 	saveButton := widget.NewButton("Save", func() {
-		dialog.ShowFileSave(func(reader fyne.URIWriteCloser, err error) {
+		filename, err := cross_dialog.File().Title("Load").Filter("Language Config Files", "lang").Filter("All files", "*").Save()
+		if err != nil {
+			if err != cross_dialog.ErrCancelled {
+				dialog.ShowError(err, windows)
+			}
+			return
+		}
+		file, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY, 0644)
+		if err != nil {
+			dialog.ShowError(err, windows)
+			return
+		}
+		if file == nil {
+			return
+		}
+		defer file.Close()
+
+		subtitleIdx := byte(0xFF)
+		subtitleBits := uint32(0)
+		audioBits := uint32(0)
+		audioIdx := byte(0xFF)
+
+		for i, lang := range langList {
+			if slices.Contains(subtitleCheckList.Selected, lang) {
+				subtitleBits |= 1 << uint(i)
+			}
+			if slices.Contains(audioCheckList.Selected, lang) {
+				audioBits |= 1 << uint(i)
+			}
+		}
+
+		for i, lang := range langList {
+			if lang == subtitleDropList.Selected {
+				subtitleIdx = byte(i)
+			}
+			if lang == audioDropList.Selected {
+				audioIdx = byte(i)
+			}
+		}
+		if subtitleIdx == 0xFF || audioIdx == 0xFF {
+			dialog.ShowError(fmt.Errorf("%s", "Invalid preferred language selection"), windows)
+			return
+		}
+
+		subtitleBitfield := make([]byte, 4)
+		audioBitfield := make([]byte, 4)
+
+		binary.BigEndian.PutUint32(subtitleBitfield, subtitleBits)
+		binary.BigEndian.PutUint32(audioBitfield, audioBits)
+
+		{
+			fmt.Printf("Writing file:\n")
+
+			_, err := file.Write([]byte("LANG"))
 			if err != nil {
 				dialog.ShowError(err, windows)
 				return
 			}
-			if reader == nil {
+			fmt.Printf("\tHeader:\t\tLANG\n")
+
+			_, err = file.Write([]byte{subtitleIdx})
+			if err != nil {
+				dialog.ShowError(err, windows)
 				return
 			}
-			defer reader.Close()
+			fmt.Printf("\tSubtitleIdx:\t%d\n", subtitleIdx)
 
-			subtitleIdx := byte(0)
-			subtitleBits := uint32(0)
-			audioBits := uint32(0xFF)
-			audioIdx := byte(0xFF)
-
-			for i, lang := range langList {
-				if slices.Contains(subtitleCheckList.Selected, lang) {
-					subtitleBits |= 1 << uint(i)
-				}
-				if slices.Contains(audioCheckList.Selected, lang) {
-					audioBits |= 1 << uint(i)
-				}
-			}
-
-			for i, lang := range langList {
-				if lang == subtitleDropList.Selected {
-					subtitleIdx = byte(i)
-				}
-				if lang == audioDropList.Selected {
-					audioIdx = byte(i)
-				}
-			}
-			if subtitleIdx == 0xFF || audioIdx == 0xFF {
-				dialog.ShowError(fmt.Errorf("%s", "Invalid preferred language selection"), windows)
+			_, err = file.Write(subtitleBitfield)
+			if err != nil {
+				dialog.ShowError(err, windows)
 				return
 			}
+			fmt.Printf("\tSubtitleBytes:\t%v\n", subtitleBitfield)
 
-			subtitleBitfield := make([]byte, 4)
-			audioBitfield := make([]byte, 4)
-
-			binary.BigEndian.PutUint32(subtitleBitfield, subtitleBits)
-			binary.BigEndian.PutUint32(audioBitfield, audioBits)
-
-			{
-				fmt.Printf("Writing file:\n")
-
-				_, err := reader.Write([]byte("LANG"))
-				if err != nil {
-					dialog.ShowError(err, windows)
-					return
-				}
-				fmt.Printf("\tHeader:\t\tLANG\n")
-
-				_, err = reader.Write([]byte{subtitleIdx})
-				if err != nil {
-					dialog.ShowError(err, windows)
-					return
-				}
-				fmt.Printf("\tSubtitleIdx:\t%d\n", subtitleIdx)
-
-				_, err = reader.Write(subtitleBitfield)
-				if err != nil {
-					dialog.ShowError(err, windows)
-					return
-				}
-				fmt.Printf("\tSubtitleBytes:\t%v\n", subtitleBitfield)
-
-				_, err = reader.Write(audioBitfield)
-				if err != nil {
-					dialog.ShowError(err, windows)
-					return
-				}
-				fmt.Printf("\tAudioBytes:\t%v\n", audioBitfield)
-
-				_, err = reader.Write([]byte{audioIdx})
-				if err != nil {
-					dialog.ShowError(err, windows)
-					return
-				}
-				fmt.Printf("\tAudioIdx:\t%d\n", audioIdx)
+			_, err = file.Write(audioBitfield)
+			if err != nil {
+				dialog.ShowError(err, windows)
+				return
 			}
-		}, windows)
+			fmt.Printf("\tAudioBytes:\t%v\n", audioBitfield)
+
+			_, err = file.Write([]byte{audioIdx})
+			if err != nil {
+				dialog.ShowError(err, windows)
+				return
+			}
+			fmt.Printf("\tAudioIdx:\t%d\n", audioIdx)
+		}
 	})
 
 	windows.SetContent(
