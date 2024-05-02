@@ -100,3 +100,7 @@ Don't forget to download language files used by chosen language (audio and video
   - For the [Ghidra](https://github.com/NationalSecurityAgency/ghidra)
     - Best decompiler ever (IMO)
     - Scariest debugger ever (IMO)
+
+- [x64dbg Contributors](https://x64dbg.com/#credits)
+  - For the [x64dbg](https://x64dbg.com)
+    - Powerful yet simple to use debugger
