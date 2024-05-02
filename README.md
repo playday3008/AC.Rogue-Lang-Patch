@@ -32,7 +32,7 @@ struct LocalizationLang
 };
 ```
 
-Check `tools\LocLangGenerator\localization.lang.struct.hexpat` for the complete structure. (Use ImHex to view and use the file)
+Check `tools\LocLangGenerator\localization.lang.struct.hexpat` for the complete structure. (Use [ImHex](https://github.com/WerWolv/ImHex) to view and use the file)
 
 #### Inner Logic
 
@@ -79,10 +79,8 @@ Don't forget to download language files used by chosen language (audio and video
 - [**@ThirteenAG**](https://github.com/ThirteenAG)
   - For the [Ultimate ASI Loader](https://github.com/ThirteenAG/Ultimate-ASI-Loader)
     - Basically ***Ultimate*** Proxy DLL implementation
-
   - For the [injector](https://github.com/ThirteenAG/injector)
     - Easy to use memory injection library
-
   - For the [Hooking.Patterns](https://github.com/ThirteenAG/Hooking.Patterns)
     - Easy to use pattern scanning library
 
