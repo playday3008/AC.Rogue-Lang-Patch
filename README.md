@@ -1,10 +1,10 @@
-# AC Rogue Language Patcher
+# AC Rogue Patch
 
 ## Description / Theory
 
 ### tl;dr
 
-Patch for the AC: Rogue to force change the language of the game.
+Patch for the AC: Rogue to force change the language of the game, and remove black bars on non 16:9 resolutions.
 
 ### Theory
 
@@ -68,7 +68,7 @@ As we can see, game can report 6 different game ids, but probably you only own o
 
 ## Usage / Installation
 
-Just take `ACRogueLangPatcher.dll`, rename it to `version.dll`, then copy it and `patch_config.ini` to the game directory. Change `Region` field in the `patch_config.ini` to the desired region.
+Just take `ACRoguePatcher.dll`, rename it to `version.dll`, then copy it and `patch_config.ini` to the game directory. Change `Region` field in the `patch_config.ini` to the desired region.
 
 Also you can use `loc-lang-gen.exe`, to enable/disable particular localization. Just load `localization.lang` change stuff and save it.
 
