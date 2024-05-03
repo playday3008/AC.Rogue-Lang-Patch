@@ -4,7 +4,7 @@
 
 ### tl;dr
 
-Patch for the AC: Rogue to force change the language of the game, and remove black bars on non 16:9 resolutions.
+Patch for the AC: Rogue to force change the language of the game, remove black bars on non 16:9 resolutions, changable FOV.
 
 ### Theory
 
