@@ -18,7 +18,8 @@
             "program": "X:\\Games\\UbisoftLibrary\\Assassin's Creed Rogue\\ACC.exe",
             "args": [],
             "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
+            // Change the path to the game's executable
+            "cwd": "X:\\Games\\UbisoftLibrary\\Assassin's Creed Rogue\\",
             "environment": [],
             "externalConsole": false
         }
