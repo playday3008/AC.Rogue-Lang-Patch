@@ -1,5 +1,14 @@
 # AC Rogue Patch
 
+## Known bugs
+
+That's the list of known problems with that library, feel free to contribute with the solutions
+
+- Targets on screen showing with some offset (less noticable when HUD is stretched, but more noticable with really tall screens
+  - Game uses a lot of function which have multiple usages, don't have time to track to origins to fix it
+- When exited to main menu from game, menu doesn't scale back down
+  - Need to find better value to track, or function to hook, so we can always tell if we in the game
+
 ## Description / Theory
 
 ### tl;dr
