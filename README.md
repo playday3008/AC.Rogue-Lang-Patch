@@ -1,8 +1,8 @@
-# AC Rogue Patch
+# AC: Rogue Patch
 
 ## Known bugs
 
-That's the list of known problems with that library, feel free to contribute with the solutions
+That's the list of known problems with that patch, feel free to contribute with the solutions
 
 - Targets on screen showing with some offset
   - Less noticable when HUD is stretched, but more noticable with really tall resolutions
